@@ -6,7 +6,7 @@ import { formatKobo, shippingFor, FREE_SHIPPING_THRESHOLD_KOBO } from "@/lib/for
 import { ProductVisual } from "@/components/ProductVisual";
 
 export default function CartPage() {
-  const { lines, ready, subtotalKobo, setQuantity, remove } = useCart();
+  const { lines, ready, synced, subtotalKobo, setQuantity, remove } = useCart();
   const shipping = shippingFor(subtotalKobo);
   const toFree = FREE_SHIPPING_THRESHOLD_KOBO - subtotalKobo;
 
@@ -99,6 +99,11 @@ export default function CartPage() {
           {toFree > 0 && (
             <p className="muted small">Add {formatKobo(toFree)} more for free shipping.</p>
           )}
+          <p className="muted small">
+            {synced
+              ? "Your cart is saved to your account and syncs with the mobile app."
+              : "Sign in to save your cart and use it on the mobile app."}
+          </p>
           <Link href="/checkout" className="btn btn-primary btn-block btn-lg">
             Checkout
           </Link>

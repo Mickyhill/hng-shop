@@ -1,10 +1,12 @@
 # MickyHill Store
 
-A shop website for handmade Nigerian goods, built for **HNG Internship 15, Task 2**.
+A shop website for handmade Nigerian goods, built for **HNG Internship 15** (Task 2 website, Task 3 shared cart with the mobile app).
 
 Shoppers browse products, add them to a cart, sign in with Google, check out, and get an order confirmation email. Every order is stored in Postgres.
 
 **Live demo:** https://mickyhill-store.vercel.app
+
+**Mobile app:** https://github.com/Mickyhill/hng-shop-mobile
 
 ## Task checklist
 
@@ -15,6 +17,8 @@ Shoppers browse products, add them to a cart, sign in with Google, check out, an
 | Persist everything in a database | Supabase Postgres: `products`, `orders`, `order_items` |
 | Confirmation emails | Sent from the server after each order. Brevo by default, Mailgun supported (see note below) |
 | Google auth with Google Cloud Console | Google OAuth client from Google Cloud Console, connected through Supabase Auth |
+| Task 3: one account on web and mobile | The mobile app signs in through the same Supabase Auth project |
+| Task 3: cart syncs instantly to the app | Signed-in carts live in `cart_items`. Supabase Realtime pushes changes to every device |
 
 ## Stack
 
@@ -26,10 +30,10 @@ Shoppers browse products, add them to a cart, sign in with Google, check out, an
 
 ## How checkout works
 
-1. The cart lives in the browser (localStorage), so visitors shop without an account.
+1. Guests keep their cart in the browser (localStorage). After sign-in, the cart moves to the `cart_items` table and syncs live with the mobile app through Supabase Realtime.
 2. `/checkout` requires a signed-in user. Middleware sends visitors to `/login` first.
-3. The form posts to `POST /api/checkout`. The route validates input with Zod and calls the Postgres function `place_order()`.
-4. `place_order()` runs in one transaction. It reads prices from the `products` table (never from the browser), checks and reduces stock, and writes the order and its items.
+3. The form posts to `POST /api/checkout`. The website sends its session cookie. The mobile app sends a Bearer token (`lib/supabase/request.ts`). The route validates input with Zod and calls the Postgres function `place_order()`.
+4. `place_order()` runs in one transaction. It reads prices from the `products` table (never from the browser), checks and reduces stock, writes the order and its items, and empties the shared cart.
 5. The route sends the confirmation email through Brevo or Mailgun. A failed email never loses the order. The shopper sees a notice instead.
 6. Row Level Security lets each user read only their own orders.
 
@@ -48,11 +52,12 @@ app/
   auth/signout/route.ts     sign out
 components/                 header, product visual, add-to-cart
 lib/
-  supabase/                 browser, server and middleware clients
+  supabase/                 browser, server, middleware and request (cookie or Bearer) clients
   email.ts                  email template, Brevo and Mailgun senders
-  cart.tsx                  cart state
+  cart.tsx                  cart state: guest cart or live account cart
   format.ts                 Naira formatting and shipping rule
 supabase/schema.sql         tables, RLS policies, place_order(), seed data
+supabase/migrations/        changes to run after schema.sql, in order
 middleware.ts               session refresh and route protection
 ```
 
@@ -70,7 +75,7 @@ cp .env.example .env.local
 ### 2. Supabase
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. Open **SQL Editor**, paste the contents of `supabase/schema.sql`, and click **Run**.
+2. Open **SQL Editor**, paste the contents of `supabase/schema.sql`, and click **Run**. Then run each file in `supabase/migrations/` in order.
 3. From **Project Settings > API**, copy the Project URL and the `anon` public key into `.env.local`.
 
 ### 3. Google sign-in
@@ -84,6 +89,7 @@ cp .env.example .env.local
 7. In Supabase, open **Authentication > URL Configuration**. Set **Site URL** to your live URL and add these **Redirect URLs**:
    - `http://localhost:3000/**`
    - `https://<your-vercel-domain>/**`
+   - `exp://**` (for the mobile app in Expo Go)
 
 ### 4. Email (Brevo)
 
@@ -113,7 +119,7 @@ Open http://localhost:3000.
 - Secrets live in environment variables. `.env.local` is git-ignored.
 - Prices and stock are enforced in the database, so a tampered cart cannot change what an order costs.
 - `place_order()` runs as `security definer` but uses `auth.uid()`, so users can only create orders for themselves.
-- Orders and order items are protected by Row Level Security.
+- Orders, order items and carts are protected by Row Level Security.
 - Redirect targets after sign-in are limited to paths on this site.
 
 ## Author

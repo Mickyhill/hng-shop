@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/server";
+import { createRequestClient } from "@/lib/supabase/request";
 import { sendOrderConfirmation } from "@/lib/email";
 import type { Order, OrderItem } from "@/lib/types";
 
@@ -24,11 +24,8 @@ const checkoutSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  // 1. Authenticate.
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // 1. Authenticate (cookie session on the website, bearer token from the mobile app).
+  const { supabase, user } = await createRequestClient(request);
 
   if (!user?.email) {
     return NextResponse.json({ error: "Please sign in to place an order." }, { status: 401 });

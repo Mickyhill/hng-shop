@@ -5,7 +5,12 @@
 -- =====================================================================
 
 -- ---------- Clean slate (re-runnable) ----------
+-- WARNING: re-running this file deletes all products, orders and carts.
+-- After this file, run every file in supabase/migrations/ in order.
 drop function if exists public.place_order(jsonb, text, text, text, text, text);
+drop function if exists public.cart_add(uuid, integer);
+drop function if exists public.cart_set(uuid, integer);
+drop table if exists public.cart_items;
 drop table if exists public.order_items;
 drop table if exists public.orders;
 drop table if exists public.products;
