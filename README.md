@@ -4,7 +4,7 @@ A shop website for handmade Nigerian goods, built for **HNG Internship 15, Task 
 
 Shoppers browse products, add them to a cart, sign in with Google, check out, and get an order confirmation email. Every order is stored in Postgres.
 
-**Live demo:** _add your Vercel link here_
+**Live demo:** https://mickyhill-store.vercel.app
 
 ## Task checklist
 
